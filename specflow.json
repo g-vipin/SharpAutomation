@@ -1,0 +1,21 @@
+{
+  "specFlow": {
+    "bindingCulture": {
+      "name": "en"
+    },
+    "unitTestProvider": {
+      "name": "NUnit"
+    },
+    "runtime": {
+      "obtainDependenciesFromNuGet": true,
+      "parallelExecution": {
+        "testThreadCount": 4, 
+        "syncContext": false
+      }
+    },
+    "trace": {
+      "traceSuccessfulSteps": true,
+      "traceTimings": true
+    }
+  }
+}

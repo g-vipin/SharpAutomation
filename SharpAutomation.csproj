@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="DotNetSeleniumExtras.PageObjects" Version="3.11.0" />
+    <PackageReference Include="FluentAssertions" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="4.3.2" />
+    <PackageReference Include="NUnit.Analyzers" Version="4.3.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Selenium.Support" Version="4.28.0" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.28.0" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="133.0.6943.2700-beta" />
+    <PackageReference Include="Selenium.WebDriver.GeckoDriver" Version="0.35.0" />
+    <PackageReference Include="SeleniumExtras.WaitHelpers" Version="1.0.2" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
+    <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
+    <PackageReference Include="Serilog.Extensions.Logging.File" Version="9.0.0-dev-02302" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.1-dev-02317" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="SpecFlow" Version="4.0.31-beta" />
+    <PackageReference Include="SpecFlow.NUnit" Version="4.0.31-beta" />
+    <PackageReference Include="SpecFlow.Tools.MsBuild.Generation" Version="4.0.31-beta" />
+    <PackageReference Include="WebDriverManager" Version="2.17.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="SharpAutomation.runsettings" />
+  </ItemGroup>
+  <PropertyGroup>
+    <RunSettingsFilePath>SharpAutomation.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
+
+</Project>
