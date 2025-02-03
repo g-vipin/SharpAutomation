@@ -9,8 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Allure.NUnit" Version="2.12.1" />
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="DotNetSeleniumExtras.PageObjects" Version="3.11.0" />
+    <PackageReference Include="ExtentReports" Version="5.0.5-beta1" />
     <PackageReference Include="FluentAssertions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.1" />
@@ -36,6 +38,8 @@
     <PackageReference Include="SpecFlow" Version="4.0.31-beta" />
     <PackageReference Include="SpecFlow.NUnit" Version="4.0.31-beta" />
     <PackageReference Include="SpecFlow.Tools.MsBuild.Generation" Version="4.0.31-beta" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.1" />
+    <PackageReference Include="System.Text.Json" Version="9.0.1" />
     <PackageReference Include="WebDriverManager" Version="2.17.5" />
   </ItemGroup>
 
@@ -45,7 +49,13 @@
 
   <ItemGroup>
     <None Update="appsettings.json">
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Update="specflow.json">
+     <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

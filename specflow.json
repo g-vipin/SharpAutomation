@@ -14,8 +14,12 @@
       }
     },
     "trace": {
+      "level": "Verbose",
       "traceSuccessfulSteps": true,
       "traceTimings": true
-    }
+    },
+    "stepAssemblies": [
+      {"assembly": "Allure.SpecFlowPlugin"}
+    ]
   }
 }

@@ -1,9 +1,10 @@
+using Allure.NUnit;
 using FluentAssertions;
 using OpenQA.Selenium;
 
 namespace SharpAutomation.Tests
 {
-    [TestFixture]
+    [AllureNUnit]
     public class TitleTest
     {
 

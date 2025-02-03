@@ -1,8 +1,9 @@
+using Allure.NUnit;
 using FluentAssertions;
 using OpenQA.Selenium;
 
 namespace SharpAutomation.Tests
-{
+{   [AllureNUnit]
     public class UrlTest
     {
         [Test]
