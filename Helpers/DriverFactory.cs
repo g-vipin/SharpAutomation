@@ -33,6 +33,7 @@ public sealed class DriverFactory
     {
         new DriverManager().SetUpDriver(new ChromeConfig());
         var options = new ChromeOptions();
+        options.SetLoggingPreference(LogType.Browser, LogLevel.All);
         return new ChromeDriver(options);
     }
 
@@ -40,6 +41,7 @@ public sealed class DriverFactory
     {
         new DriverManager().SetUpDriver(new FirefoxConfig());
         var options = new FirefoxOptions();
+        options.SetLoggingPreference(LogType.Browser, LogLevel.All);
         return new FirefoxDriver(options);
     }
 }

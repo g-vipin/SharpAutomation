@@ -2,7 +2,7 @@
 <RunSettings>
   <RunConfiguration>
     <MaxCpuCount>4</MaxCpuCount>
-    <ResultsDirectory>TestResults</ResultsDirectory> <!-- Test results directory -->
+    <ResultsDirectory>TestResults</ResultsDirectory>
     <TargetFrameworkVersion>.NETCoreApp,Version=v9.0</TargetFrameworkVersion>
   </RunConfiguration>
 </RunSettings>

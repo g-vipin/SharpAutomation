@@ -16,7 +16,8 @@
     "trace": {
       "level": "Verbose",
       "traceSuccessfulSteps": true,
-      "traceTimings": true
+      "traceTimings": true,
+      "minTracedDuration": "00:00:00.1"
     },
     "stepAssemblies": [
       {"assembly": "Allure.SpecFlowPlugin"}

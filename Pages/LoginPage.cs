@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using OpenQA.Selenium;
 using SharpAutomation.Extensions;
 
@@ -29,6 +30,7 @@ public class LoginPage : Page
         }
 
         SubmitButton.Click();
+        Trace.TraceInformation("Login Successful");
 
     }
 

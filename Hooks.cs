@@ -1,41 +1,82 @@
+using System;
+using System.Diagnostics;
+using System.IO;
 using AventStack.ExtentReports;
 using AventStack.ExtentReports.Reporter;
 using BoDi;
 using OpenQA.Selenium;
+using Serilog;
 using TechTalk.SpecFlow;
 
 namespace SharpAutomation
 {
     [Binding]
-    public class Hooks(IObjectContainer objectContainer, ScenarioContext scenarioContext)
+    public class Hooks
     {
-        private readonly IObjectContainer _objectContainer = objectContainer;
-        private readonly ScenarioContext _scenarioContext = scenarioContext;
+        private readonly IObjectContainer _objectContainer;
+        private readonly ScenarioContext _scenarioContext;
 
         private IWebDriver? _driver;
         private static ExtentReports? _extentReports;
         private static ExtentSparkReporter? _extentSparkReporter;
         private ExtentTest? _extentTest;
 
+        private readonly ILogger _logger = Log.ForContext<Hooks>();
+
+        public Hooks(IObjectContainer objectContainer, ScenarioContext scenarioContext)
+        {
+            _objectContainer = objectContainer;
+            _scenarioContext = scenarioContext;
+        }
+
         [BeforeTestRun]
         public static void InitializeReport()
         {
-            var reportPath = Path.Combine(TestContext.CurrentContext.WorkDirectory,"TestResults", "ExtentTestReport.html");
-            _extentSparkReporter = new ExtentSparkReporter(reportPath);
-            _extentReports = new ExtentReports();
-            _extentReports.AttachReporter(_extentSparkReporter);
+            try
+            {
+                var reportPath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "TestResults", "ExtentTestReport.html");
+                _extentSparkReporter = new ExtentSparkReporter(reportPath);
+                _extentReports = new ExtentReports();
+                _extentReports.AttachReporter(_extentSparkReporter);
+                Trace.TraceInformation("Extent report initialized.");
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"Failed to initialize report: {ex.Message}");
+                throw;
+            }
+        }
 
+        [BeforeTestRun]
+        public static void InitializeSpecFlowTrace()
+        {
+            Trace.Listeners.Add(new TextWriterTraceListener("trace.log"));
+            Trace.Listeners.Add(new ConsoleTraceListener());
+            Trace.AutoFlush = true;
+            Trace.TraceInformation("SpecFlow tracing initialized.");
+            Trace.TraceInformation("SpecFlow tracing initialized.");
         }
 
         [BeforeScenario(Order = -1)]
         public void InitializeWebDriver()
         {
-            _driver = GlobalSetUp.GetService<IWebDriver>();
-            _objectContainer.RegisterInstanceAs(_driver);
-
-            if (_driver == null)
+            Trace.TraceInformation($"Starting Scenario: {_scenarioContext.ScenarioInfo.Title}");
+            try
             {
-                throw new InvalidOperationException("WebDriver could not be initialized.");
+                _driver = GlobalSetUp.GetService<IWebDriver>();
+                _objectContainer.RegisterInstanceAs(_driver);
+
+                if (_driver == null)
+                {
+                    throw new InvalidOperationException("WebDriver could not be initialized.");
+                }
+
+                _logger.Information("WebDriver initialized successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "WebDriver initialization failed.");
+                throw;
             }
         }
 
@@ -52,16 +93,12 @@ namespace SharpAutomation
                     throw new InvalidOperationException("Base URL is not configured properly.");
                 }
 
-                if (_driver != null)
-                {
-                    _driver.Navigate().GoToUrl(baseUrl);
-
-                }
-
+                _driver?.Navigate().GoToUrl(baseUrl);
+                _logger.Information("Navigated to Base URL.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error launching Base URL: {ex.Message}");
+                _logger.Error(ex, "Error launching Base URL.");
                 throw;
             }
         }
@@ -73,52 +110,69 @@ namespace SharpAutomation
             {
                 _extentTest = _extentReports.CreateTest(_scenarioContext.ScenarioInfo.Title);
                 _scenarioContext["ExtentTest"] = _extentTest;
+                _logger.Information("Extent test node created for scenario.");
             }
         }
 
-        [AfterStep]
+        [AfterStep(Order = 0)]
         public void LogStepResults()
         {
             var stepType = _scenarioContext.StepContext.StepInfo.StepDefinitionType.ToString();
             var stepInfo = _scenarioContext.StepContext.StepInfo.Text;
 
-            if (_extentTest != null)
+            if (_extentTest == null) return;
+
+            if (_scenarioContext.TestError == null)
             {
-
-                if (_scenarioContext.TestError == null)
-                {
-                    _extentTest.Log(AventStack.ExtentReports.Status.Pass, $"{stepType}: {stepInfo}");
-                }
-                else
-                {
-                    _extentTest.Log(AventStack.ExtentReports.Status.Fail, $"{stepType}: {stepInfo}");
-                    _extentTest.Log(AventStack.ExtentReports.Status.Fail, _scenarioContext.TestError.Message);
-
-                    AddScreenshotToReport();
-                }
+                _extentTest.Log(AventStack.ExtentReports.Status.Pass, $"{stepType}: {stepInfo}");
+            }
+            else
+            {
+                _extentTest.Log(AventStack.ExtentReports.Status.Fail, $"{stepType}: {stepInfo}");
+                _extentTest.Log(AventStack.ExtentReports.Status.Fail, _scenarioContext.TestError.Message);
+                AddScreenshotToReport();
             }
         }
 
-        private void AddScreenshotToReport()
+        [AfterStep(Order = 1)]
+        public void GetBrowserLogs()
         {
+            var logFilePath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "TestResults", $"driverLogs_{DateTime.Now:yyyyMMdd}.log");
+            AppendBrowserLogs(logFilePath);
+            AppendTraceLogs(logFilePath);
+        }
+
+        private void AppendBrowserLogs(string logFilePath)
+        {
+            if (_driver == null) return;
+
             try
             {
-                if (_driver is ITakesScreenshot takesScreenshot)
+                var browserLogs = _driver.Manage().Logs.GetLog(LogType.Browser);
+                foreach (var logEntry in browserLogs)
                 {
-                    var screenshot = takesScreenshot.GetScreenshot();
-                    var scenarioTitle = _scenarioContext.ScenarioInfo.Title;
-                    var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    var screenshotDirectory = Path.Combine(Directory.GetCurrentDirectory(), "TestResults", "ScreenShots");
-                    Directory.CreateDirectory(screenshotDirectory);
-                    var screenshotPath = Path.Combine(screenshotDirectory, $"{scenarioTitle}_{timestamp}.png");
-
-                    screenshot.SaveAsFile(screenshotPath);
-                    _extentTest?.AddScreenCaptureFromPath(screenshotPath);
+                    File.AppendAllText(logFilePath, $"{logEntry.Timestamp}: {logEntry.Level}: {logEntry.Message}{Environment.NewLine}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error capturing screenshot: {ex.Message}");
+                _logger.Error(ex, "Failed to append browser logs.");
+            }
+        }
+
+        private void AppendTraceLogs(string logFilePath)
+        {
+            try
+            {
+                if (File.Exists(logFilePath))
+                {
+                    File.AppendAllText(logFilePath, Environment.NewLine + "Trace Logs:" + Environment.NewLine);
+                    File.AppendAllText(logFilePath, File.ReadAllText(logFilePath));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to append trace logs.");
             }
         }
 
@@ -129,23 +183,56 @@ namespace SharpAutomation
             {
                 _driver?.Quit();
                 _driver?.Dispose();
+                _logger.Information("WebDriver disposed successfully.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while disposing WebDriver: {ex.Message}");
+                _logger.Error(ex, "Error while disposing WebDriver.");
             }
         }
 
         [AfterScenario(Order = int.MaxValue)]
         public void LogScenarioEnd()
         {
+            Trace.TraceInformation($"Completed Scenario: {_scenarioContext.ScenarioInfo.Title}");
             _extentTest?.Log(AventStack.ExtentReports.Status.Info, "Scenario Ended");
         }
 
         [AfterTestRun]
         public static void TearDownReport()
         {
-            _extentReports?.Flush();
+            try
+            {
+                _extentReports?.Flush();
+                Trace.TraceInformation("Extent report flushed.");
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"Error flushing Extent report: {ex.Message}");
+            }
+        }
+
+        private void AddScreenshotToReport()
+        {
+            try
+            {
+                if (_driver is ITakesScreenshot takesScreenshot)
+                {
+                    var screenshot = takesScreenshot.GetScreenshot();
+                    var scenarioTitle = _scenarioContext.ScenarioInfo.Title.Replace(" ", "_");
+                    var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    var screenshotDirectory = Path.Combine(Directory.GetCurrentDirectory(), "TestResults", "Screenshots");
+                    Directory.CreateDirectory(screenshotDirectory);
+                    var screenshotPath = Path.Combine(screenshotDirectory, $"{scenarioTitle}_{timestamp}.png");
+
+                    screenshot.SaveAsFile(screenshotPath);
+                    _extentTest?.AddScreenCaptureFromPath(screenshotPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error capturing screenshot: {ex.Message}");
+            }
         }
     }
 }
