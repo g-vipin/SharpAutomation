@@ -1,6 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.IO;
 using AventStack.ExtentReports;
 using AventStack.ExtentReports.Reporter;
 using BoDi;
@@ -30,10 +28,18 @@ namespace SharpAutomation
         }
 
         [BeforeTestRun]
-        public static void InitializeReport()
+        public static void InitializeLoggingAndReport()
         {
             try
             {
+                var traceLogFilePath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "TestResults", "trace.log");
+                Directory.CreateDirectory(Path.GetDirectoryName(traceLogFilePath)!);
+
+                Trace.Listeners.Add(new TextWriterTraceListener(traceLogFilePath));
+                Trace.Listeners.Add(new ConsoleTraceListener());
+                Trace.AutoFlush = true;
+                Trace.TraceInformation("Trace logging initialized.");
+
                 var reportPath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "TestResults", "ExtentTestReport.html");
                 _extentSparkReporter = new ExtentSparkReporter(reportPath);
                 _extentReports = new ExtentReports();
@@ -42,19 +48,9 @@ namespace SharpAutomation
             }
             catch (Exception ex)
             {
-                Trace.TraceError($"Failed to initialize report: {ex.Message}");
+                Trace.TraceError($"Error during initialization: {ex.Message}");
                 throw;
             }
-        }
-
-        [BeforeTestRun]
-        public static void InitializeSpecFlowTrace()
-        {
-            Trace.Listeners.Add(new TextWriterTraceListener("trace.log"));
-            Trace.Listeners.Add(new ConsoleTraceListener());
-            Trace.AutoFlush = true;
-            Trace.TraceInformation("SpecFlow tracing initialized.");
-            Trace.TraceInformation("SpecFlow tracing initialized.");
         }
 
         [BeforeScenario(Order = -1)]
@@ -76,6 +72,7 @@ namespace SharpAutomation
             catch (Exception ex)
             {
                 _logger.Error(ex, "WebDriver initialization failed.");
+                Trace.TraceError($"WebDriver initialization failed: {ex.Message}");
                 throw;
             }
         }
@@ -95,10 +92,12 @@ namespace SharpAutomation
 
                 _driver?.Navigate().GoToUrl(baseUrl);
                 _logger.Information("Navigated to Base URL.");
+                Trace.TraceInformation("Navigated to Base URL.");
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Error launching Base URL.");
+                Trace.TraceError($"Error launching Base URL: {ex.Message}");
                 throw;
             }
         }
@@ -111,6 +110,7 @@ namespace SharpAutomation
                 _extentTest = _extentReports.CreateTest(_scenarioContext.ScenarioInfo.Title);
                 _scenarioContext["ExtentTest"] = _extentTest;
                 _logger.Information("Extent test node created for scenario.");
+                Trace.TraceInformation("Extent test node created for scenario.");
             }
         }
 
@@ -125,54 +125,15 @@ namespace SharpAutomation
             if (_scenarioContext.TestError == null)
             {
                 _extentTest.Log(AventStack.ExtentReports.Status.Pass, $"{stepType}: {stepInfo}");
+                Trace.TraceInformation($"{stepType}: {stepInfo} - Passed");
             }
             else
             {
                 _extentTest.Log(AventStack.ExtentReports.Status.Fail, $"{stepType}: {stepInfo}");
                 _extentTest.Log(AventStack.ExtentReports.Status.Fail, _scenarioContext.TestError.Message);
                 AddScreenshotToReport();
-            }
-        }
-
-        [AfterStep(Order = 1)]
-        public void GetBrowserLogs()
-        {
-            var logFilePath = Path.Combine(TestContext.CurrentContext.WorkDirectory, "TestResults", $"driverLogs_{DateTime.Now:yyyyMMdd}.log");
-            AppendBrowserLogs(logFilePath);
-            AppendTraceLogs(logFilePath);
-        }
-
-        private void AppendBrowserLogs(string logFilePath)
-        {
-            if (_driver == null) return;
-
-            try
-            {
-                var browserLogs = _driver.Manage().Logs.GetLog(LogType.Browser);
-                foreach (var logEntry in browserLogs)
-                {
-                    File.AppendAllText(logFilePath, $"{logEntry.Timestamp}: {logEntry.Level}: {logEntry.Message}{Environment.NewLine}");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Failed to append browser logs.");
-            }
-        }
-
-        private void AppendTraceLogs(string logFilePath)
-        {
-            try
-            {
-                if (File.Exists(logFilePath))
-                {
-                    File.AppendAllText(logFilePath, Environment.NewLine + "Trace Logs:" + Environment.NewLine);
-                    File.AppendAllText(logFilePath, File.ReadAllText(logFilePath));
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Failed to append trace logs.");
+                Trace.TraceError($"{stepType}: {stepInfo} - Failed");
+                Trace.TraceError($"Error: {_scenarioContext.TestError.Message}");
             }
         }
 
@@ -184,10 +145,12 @@ namespace SharpAutomation
                 _driver?.Quit();
                 _driver?.Dispose();
                 _logger.Information("WebDriver disposed successfully.");
+                Trace.TraceInformation("WebDriver disposed successfully.");
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Error while disposing WebDriver.");
+                Trace.TraceError($"Error while disposing WebDriver: {ex.Message}");
             }
         }
 
@@ -199,16 +162,18 @@ namespace SharpAutomation
         }
 
         [AfterTestRun]
-        public static void TearDownReport()
+        public static void TearDownLoggingAndReport()
         {
             try
             {
                 _extentReports?.Flush();
                 Trace.TraceInformation("Extent report flushed.");
+                Trace.TraceInformation("Trace logging finalized.");
+                Trace.Flush();
             }
             catch (Exception ex)
             {
-                Trace.TraceError($"Error flushing Extent report: {ex.Message}");
+                Trace.TraceError($"Error during teardown: {ex.Message}");
             }
         }
 
@@ -227,11 +192,13 @@ namespace SharpAutomation
 
                     screenshot.SaveAsFile(screenshotPath);
                     _extentTest?.AddScreenCaptureFromPath(screenshotPath);
+                    Trace.TraceInformation($"Screenshot saved at: {screenshotPath}");
                 }
             }
             catch (Exception ex)
             {
                 _logger.Error($"Error capturing screenshot: {ex.Message}");
+                Trace.TraceError($"Error capturing screenshot: {ex.Message}");
             }
         }
     }
