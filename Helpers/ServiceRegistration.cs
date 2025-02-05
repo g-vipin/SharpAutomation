@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenQA.Selenium;
@@ -43,7 +44,15 @@ namespace SharpAutomation.Helpers
                     var browserConfig = configHelper.GetConfig("AppSettings:Browser");
                     return driverFactory.CreateWebDriver(browserConfig);
                 });
-                
+
+                services.AddHttpClient("ApiClient", client =>
+                {
+                    client.DefaultRequestHeaders.Accept.Clear();
+                    client.BaseAddress = new Uri("https://restful-booker.herokuapp.com/");
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                });
+
                 Log.Information("Service registration completed successfully.");
                 var serviceProvider = services.BuildServiceProvider();
                 Log.Information("ServiceProvider created successfully.");

@@ -59,7 +59,14 @@ public class GlobalSetUp
     public static T GetService<T>() where T : class
     {
         if (ServiceProvider == null)
+        {
+            Logger.Error("ServiceProvider is not initialized.");
             throw new InvalidOperationException("ServiceProvider is not initialized.");
-        return ServiceProvider.GetRequiredService<T>();
+        }
+        Logger.Information($"Resolving service: {typeof(T).Name}");
+        var service = ServiceProvider.GetRequiredService<T>();
+        Logger.Information($"Service {typeof(T).Name} resolved successfully.");
+        return service;
     }
+
 }
