@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenQA.Selenium;
 using Serilog;
 using Serilog.Exceptions;
+using SharpAutomation.API;
 
 namespace SharpAutomation.Helpers
 {
@@ -45,13 +46,15 @@ namespace SharpAutomation.Helpers
                     return driverFactory.CreateWebDriver(browserConfig);
                 });
 
+                services.AddTransient<HttpClientDelegatingHandler>();
+
                 services.AddHttpClient("ApiClient", client =>
                 {
                     client.DefaultRequestHeaders.Accept.Clear();
                     client.BaseAddress = new Uri("https://restful-booker.herokuapp.com/");
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     client.Timeout = TimeSpan.FromSeconds(30);
-                });
+                }).AddHttpMessageHandler<HttpClientDelegatingHandler>();
 
                 Log.Information("Service registration completed successfully.");
                 var serviceProvider = services.BuildServiceProvider();
