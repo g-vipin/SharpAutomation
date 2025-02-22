@@ -15,8 +15,9 @@ public class HttpClientDelegatingHandler : DelegatingHandler
         {
             if (!request.Headers.Contains("X-Correlation-ID"))
             {
-                request.Headers.Add("X-Correlation-ID", Guid.NewGuid().ToString());
-                _logger.LogInformation("Sending request with Correlation ID: {0}", request.Headers.GetValues("X-Correlation-ID").FirstOrDefault());
+                var correlationId = Guid.NewGuid().ToString();
+                request.Headers.Add("X-Correlation-ID", correlationId);
+                _logger.LogInformation("Sending request with Correlation ID: {CorrelationID}", correlationId);
             }
 
             var startTime = DateTime.UtcNow;
