@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Serilog.Context;
 
 namespace SharpAutomation.API;
 public class HttpClientDelegatingHandler : DelegatingHandler
@@ -19,30 +20,34 @@ public class HttpClientDelegatingHandler : DelegatingHandler
                 request.Headers.Add("X-Correlation-ID", correlationId);
                 _logger.LogInformation("Sending request with Correlation ID: {CorrelationID}", correlationId);
             }
-
-            var startTime = DateTime.UtcNow;
-            _logger.LogInformation("Initiating Api request for the url: '{request.RequestUri}' with method: '{request.Method}'", request.RequestUri, request.Method);
-
-            if (request.Content != null)
+            using (LogContext.PushProperty("CorrelationID", request.Headers.GetValues("X-Correlation-ID").FirstOrDefault()))
             {
-                var requestBody = await request.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogDebug("Request body: '{RequestBody}'", requestBody);
+
+
+                var startTime = DateTime.UtcNow;
+                _logger.LogInformation("Initiating Api request for the url: '{request.RequestUri}' with method: '{request.Method}'", request.RequestUri, request.Method);
+
+                if (request.Content != null)
+                {
+                    var requestBody = await request.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogDebug("Request body: '{RequestBody}'", requestBody);
+                }
+
+
+                var response = await base.SendAsync(request, cancellationToken);
+
+                var stopTime = DateTime.UtcNow;
+                var duration = stopTime - startTime;
+
+                _logger.LogInformation("Response received. Success: {IsSuccess}, Status Code: {StatusCode}, URL: {RequestUri}, Duration: {Duration}ms",
+                 response.IsSuccessStatusCode, response.StatusCode, request.RequestUri, duration.TotalMilliseconds);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var responseBody = response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogDebug("Response body for failed request: {ResponseBody}", responseBody);
+                }
+                return response;
             }
-
-
-            var response = await base.SendAsync(request, cancellationToken);
-
-            var stopTime = DateTime.UtcNow;
-            var duration = stopTime - startTime;
-
-            _logger.LogInformation("Response received. Success: {IsSuccess}, Status Code: {StatusCode}, URL: {RequestUri}, Duration: {Duration}ms",
-             response.IsSuccessStatusCode, response.StatusCode, request.RequestUri, duration.TotalMilliseconds);
-            if (!response.IsSuccessStatusCode)
-            {
-                var responseBody = response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogDebug("Response body for failed request: {ResponseBody}", responseBody);
-            }
-            return response;
         }
         catch (Exception ex)
         {

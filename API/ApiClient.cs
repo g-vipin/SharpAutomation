@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace SharpAutomation.API;
 public abstract class ApiClient
 {
-    protected HttpClient Client;
+    protected readonly HttpClient Client;
 
     protected ApiClient()
     {
