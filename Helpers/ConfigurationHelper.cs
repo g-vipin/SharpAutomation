@@ -41,6 +41,9 @@ namespace SharpAutomation.Helpers
             {
                 var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
                 var jsonString = JsonSerializer.Serialize(configs, jsonOptions);
+                if (!File.Exists(filePath))
+                    throw new FileNotFoundException($"Unable to load or locate file from location : {filePath}");
+
                 File.WriteAllText(filePath, jsonString);
                 _logger.Information("Appsettings file created at {FilePath}.", filePath);
             }
