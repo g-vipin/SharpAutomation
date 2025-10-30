@@ -9,9 +9,7 @@ namespace SharpAutomation;
 public class GlobalSetUp
 {
     public static ServiceProvider ServiceProvider;
-
     public static ConfigurationHelper ConfigurationHelper;
-
     public static Serilog.ILogger Logger = Log.ForContext<GlobalSetUp>();
 
     [OneTimeSetUp]
@@ -21,6 +19,7 @@ public class GlobalSetUp
         {
             Logger.Information("Starting Global Setup..."); ;
             ServiceProvider = ServiceRegistration.RegisterServices();
+            ConfigurationHelper = ServiceProvider.GetRequiredService<ConfigurationHelper>();
 
             if (ServiceProvider == null)
             {
@@ -28,9 +27,6 @@ public class GlobalSetUp
                 throw new InvalidOperationException("ServiceProvider initialization failed.");
             }
             Logger.Information("ServiceProvider initialized successfully.");
-
-            var driverFactory = ServiceProvider.GetRequiredService<DriverFactory>();
-            ConfigurationHelper = ServiceProvider.GetRequiredService<ConfigurationHelper>();
         }
         catch (Exception ex)
         {
@@ -54,6 +50,11 @@ public class GlobalSetUp
             throw;
         }
 
+    }
+
+    public static IServiceScope CreateTestScope()
+    {
+        return ServiceProvider.CreateScope();
     }
 
     public static T GetService<T>() where T : class

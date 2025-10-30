@@ -17,7 +17,8 @@
       "level": "Verbose",
       "traceSuccessfulSteps": true,
       "traceTimings": true,
-      "minTracedDuration": "00:00:00.1"
+      "minTracedDuration": "00:00:00.1",
+      "traceListener": "SharpAutomation.Helpers.CorrelatedTracer"
     },
     "stepAssemblies": [
       {"assembly": "Allure.SpecFlowPlugin"}

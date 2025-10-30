@@ -38,15 +38,18 @@ namespace SharpAutomation.Helpers
                 services.AddSingleton<ConfigurationHelper>();
                 services.AddSingleton<DriverFactory>();
 
-                services.AddTransient<IWebDriver>(provider =>
+
+                services.AddScoped(_ => CorrelationContextAccessor.Current);
+                services.AddScoped<IWebDriver>(provider =>
                 {
-                    var configHelper = provider.GetRequiredService<ConfigurationHelper>();
                     var driverFactory = provider.GetRequiredService<DriverFactory>();
-                    var browserConfig = configHelper.GetConfig("AppSettings:Browser");
-                    return driverFactory.CreateWebDriver(browserConfig);
+                    var configHelper = provider.GetRequiredService<ConfigurationHelper>();
+                    var browser = configHelper.GetConfig("AppSettings:Browser") ?? "chrome";
+                    return driverFactory.CreateWebDriver(browser);
                 });
 
-                services.AddTransient<HttpClientDelegatingHandler>();
+                services.AddScoped<CorrelationContext>();
+                services.AddScoped<HttpClientDelegatingHandler>();
 
                 services.AddHttpClient("ApiClient", client =>
                 {
@@ -54,7 +57,8 @@ namespace SharpAutomation.Helpers
                     client.BaseAddress = new Uri("https://restful-booker.herokuapp.com/");
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     client.Timeout = TimeSpan.FromSeconds(30);
-                }).AddHttpMessageHandler<HttpClientDelegatingHandler>();
+                })
+                .AddHttpMessageHandler<HttpClientDelegatingHandler>();
 
                 Log.Information("Service registration completed successfully.");
                 var serviceProvider = services.BuildServiceProvider();
