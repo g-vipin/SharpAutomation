@@ -1,73 +1,65 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework.Internal;
+using NUnit.Framework;
 using Serilog;
 using SharpAutomation.Helpers;
 
-namespace SharpAutomation;
-
-[SetUpFixture]
-public class GlobalSetUp
+namespace SharpAutomation
 {
-    public static ServiceProvider ServiceProvider;
-    public static ConfigurationHelper ConfigurationHelper;
-    public static Serilog.ILogger Logger = Log.ForContext<GlobalSetUp>();
-
-    [OneTimeSetUp]
-    public void Setup()
+    [SetUpFixture]
+    public class GlobalSetUp
     {
-        try
-        {
-            Logger.Information("Starting Global Setup..."); ;
-            ServiceProvider = ServiceRegistration.RegisterServices();
-            ConfigurationHelper = ServiceProvider.GetRequiredService<ConfigurationHelper>();
+        public static ServiceProvider ServiceProvider;
 
-            if (ServiceProvider == null)
+        [OneTimeSetUp]
+        public void Setup()
+        {
+            try
             {
-                Logger.Error("ServiceProvider is null. Initialization failed.");
-                throw new InvalidOperationException("ServiceProvider initialization failed.");
+                Log.Information("Starting Global Setup...");
+                
+                // Build the DI container
+                ServiceProvider = ServiceRegistration.RegisterServices();
+
+                if (ServiceProvider == null)
+                {
+                    Log.Error("ServiceProvider is null. Initialization failed.");
+                    throw new InvalidOperationException("ServiceProvider initialization failed.");
+                }
+
+                Log.Information("ServiceProvider initialized successfully.");
             }
-            Logger.Information("ServiceProvider initialized successfully.");
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Error during Global Setup.");
+                throw;
+            }
         }
-        catch (Exception ex)
+
+        [OneTimeTearDown]
+        public void TearDown()
         {
-            Logger.Fatal(ex, "Error during Global Setup.");
-            throw;
+            try
+            {
+                Log.Information("Starting Global Teardown...");
+                (ServiceProvider as IDisposable)?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error during Global tear down.");
+                throw;
+            }
+        }
+
+        // Create a new scope for each test
+        public static IServiceScope CreateTestScope()
+        {
+            return ServiceProvider.CreateScope();
+        }
+
+        // Utility: resolve services anywhere
+        public static T GetService<T>() where T : class
+        {
+            return ServiceProvider.GetRequiredService<T>();
         }
     }
-
-    [OneTimeTearDown]
-    public void TearDown()
-    {
-        try
-        {
-            Logger.Information("Starting Global Teardown...");
-
-            (ServiceProvider as IDisposable)?.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Error during Global tear down.");
-            throw;
-        }
-
-    }
-
-    public static IServiceScope CreateTestScope()
-    {
-        return ServiceProvider.CreateScope();
-    }
-
-    public static T GetService<T>() where T : class
-    {
-        if (ServiceProvider == null)
-        {
-            Logger.Error("ServiceProvider is not initialized.");
-            throw new InvalidOperationException("ServiceProvider is not initialized.");
-        }
-        Logger.Information($"Resolving service: {typeof(T).Name}");
-        var service = ServiceProvider.GetRequiredService<T>();
-        Logger.Information($"Service {typeof(T).Name} resolved successfully.");
-        return service;
-    }
-
 }

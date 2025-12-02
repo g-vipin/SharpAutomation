@@ -3,6 +3,7 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.DevTools;
 using OpenQA.Selenium.DevTools.V130.Network;
 using OpenQA.Selenium.Firefox;
+using SharpAutomation.Config;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
 using Log = Serilog.Log;

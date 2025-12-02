@@ -1,10 +1,12 @@
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using OpenQA.Selenium;
 using Serilog;
 using Serilog.Exceptions;
 using SharpAutomation.API;
+using SharpAutomation.Config;
 
 namespace SharpAutomation.Helpers
 {
@@ -14,6 +16,8 @@ namespace SharpAutomation.Helpers
         {
             try
             {
+                DotNetEnv.Env.Load();
+
                 var configuration = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -32,38 +36,44 @@ namespace SharpAutomation.Helpers
 
                 var services = new ServiceCollection();
 
-                services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog());
+                services.Configure<BrowserSettings>(configuration.GetSection("BrowserSettings"));
+                services.Configure<ApiSettings>(configuration.GetSection("ApiSettings"));
 
                 services.AddSingleton<IConfiguration>(configuration);
                 services.AddSingleton<ConfigurationHelper>();
+
+                services.AddLogging(builder => builder.AddSerilog());
+
+
                 services.AddSingleton<DriverFactory>();
+                services.AddSingleton<AutoFixtureBuilder>();
 
 
                 services.AddScoped(_ => CorrelationContextAccessor.Current);
                 services.AddScoped<IWebDriver>(provider =>
                 {
                     var driverFactory = provider.GetRequiredService<DriverFactory>();
-                    var configHelper = provider.GetRequiredService<ConfigurationHelper>();
-                    var browser = configHelper.GetConfig("AppSettings:Browser") ?? "chrome";
-                    return driverFactory.CreateWebDriver(browser);
+                    var browserSettings = provider.GetRequiredService<IOptions<BrowserSettings>>().Value;
+
+                    return driverFactory.CreateWebDriver(browserSettings.Browser);
                 });
 
                 services.AddScoped<CorrelationContext>();
                 services.AddScoped<HttpClientDelegatingHandler>();
 
-                services.AddHttpClient("ApiClient", client =>
-                {
+                services.AddHttpClient("ApiClient", (provider, client) =>
+                {  
+                    var apiSettings = provider.GetRequiredService<IOptions<ApiSettings>>().Value;
+                    client.BaseAddress = new Uri(apiSettings.BaseUrl);
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(apiSettings.ContentType));
+                    client.Timeout = TimeSpan.FromSeconds(apiSettings.TimeoutSeconds);
                     client.DefaultRequestHeaders.Accept.Clear();
-                    client.BaseAddress = new Uri("https://restful-booker.herokuapp.com/");
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    client.Timeout = TimeSpan.FromSeconds(30);
                 })
                 .AddHttpMessageHandler<HttpClientDelegatingHandler>();
 
                 Log.Information("Service registration completed successfully.");
-                var serviceProvider = services.BuildServiceProvider();
-                Log.Information("ServiceProvider created successfully.");
-                return serviceProvider;
+                return services.BuildServiceProvider();
+
             }
             catch (Exception ex)
             {

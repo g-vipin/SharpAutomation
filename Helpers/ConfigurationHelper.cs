@@ -7,6 +7,7 @@ namespace SharpAutomation.Helpers
     public sealed class ConfigurationHelper
     {
         private readonly IConfiguration _configuration;
+        
         private readonly ILogger _logger;
 
         public ConfigurationHelper(IConfiguration configuration)

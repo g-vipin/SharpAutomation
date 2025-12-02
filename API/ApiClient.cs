@@ -1,5 +1,4 @@
 using System.Text.Json;
-using OpenQA.Selenium;
 using Polly;
 
 namespace SharpAutomation.API;
@@ -13,7 +12,7 @@ public abstract class ApiClient
     protected ApiClient()
     {
         Client = HttpClientFactory.GetClient();
-        _policy = HttpClientFactory.GetPolicy();
+        _policy = RetryPolicy.GetRetryPolicy();
         _jsonOptions = HttpClientFactory.GetJsonOptions();
     }
 

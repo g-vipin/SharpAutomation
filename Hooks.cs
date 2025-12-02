@@ -14,14 +14,14 @@ namespace SharpAutomation
     public class Hooks
     {
         private readonly IObjectContainer _objectContainer;
-        private IServiceScope _scope;
-        private IWebDriver _driver;
+        private IServiceScope? _scope;
+        private IWebDriver? _driver;
         private readonly ScenarioContext _scenarioContext;
         private readonly ILogger _logger = Log.ForContext<Hooks>();
 
-        private static ExtentReports _extentReports;
-        private static ExtentSparkReporter _extentReporter;
-        private ExtentTest _extentTest;
+        private static ExtentReports? _extentReports;
+        private static ExtentSparkReporter? _extentReporter;
+        private ExtentTest? _extentTest;
 
         public Hooks(IObjectContainer objectContainer, ScenarioContext scenarioContext)
         {
@@ -62,7 +62,7 @@ namespace SharpAutomation
             _objectContainer.RegisterInstanceAs(correlationContext);
 
             var scenarioName = _scenarioContext.ScenarioInfo.Title;
-            _extentTest = _extentReports.CreateTest(scenarioName)
+            _extentTest = _extentReports?.CreateTest(scenarioName)
                 .AssignCategory(_scenarioContext.ScenarioInfo.Tags);
 
             Trace.TraceInformation($"Starting Scenario: {scenarioName}");
@@ -82,13 +82,13 @@ namespace SharpAutomation
 
             if (_scenarioContext.TestError == null)
             {
-                _extentTest.Log(AventStack.ExtentReports.Status.Pass, $"{stepType}: {stepInfo}");
+                _extentTest?.Log(AventStack.ExtentReports.Status.Pass, $"{stepType}: {stepInfo}");
                 Trace.TraceInformation($"{stepType}: {stepInfo} - ✅ Passed");
             }
             else
             {
-                _extentTest.Log(AventStack.ExtentReports.Status.Fail, $"{stepType}: {stepInfo}");
-                _extentTest.Log(AventStack.ExtentReports.Status.Fail, _scenarioContext.TestError.Message);
+                _extentTest?.Log(AventStack.ExtentReports.Status.Fail, $"{stepType}: {stepInfo}");
+                _extentTest?.Log(AventStack.ExtentReports.Status.Fail, _scenarioContext.TestError.Message);
 
                 AddScreenshotToReport();
                 Trace.TraceError($"{stepType}: {stepInfo} - ❌ Failed");
@@ -149,7 +149,7 @@ namespace SharpAutomation
                     var screenshotPath = Path.Combine(screenshotDir, $"{scenarioTitle}_{timestamp}.png");
                     screenshot.SaveAsFile(screenshotPath);
 
-                    _extentTest.AddScreenCaptureFromPath(screenshotPath);
+                    _extentTest?.AddScreenCaptureFromPath(screenshotPath);
                     Trace.TraceInformation($"Screenshot saved: {screenshotPath}");
                 }
             }

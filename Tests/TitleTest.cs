@@ -1,6 +1,8 @@
 using Allure.NUnit;
 using FluentAssertions;
+using Microsoft.Extensions.Options;
 using OpenQA.Selenium;
+using SharpAutomation.Config;
 
 namespace SharpAutomation.Tests
 {
@@ -12,9 +14,8 @@ namespace SharpAutomation.Tests
         public void NavigateToBaseUrl_ShouldMatchExpectedTitle()
         {
             var driver = GlobalSetUp.GetService<IWebDriver>();
-            var configService = GlobalSetUp.ConfigurationHelper;
-            var baseUrl = configService.GetConfig("AppSettings:BaseUrl");
-            driver.Navigate().GoToUrl(baseUrl);
+            var config = GlobalSetUp.GetService<IOptions<BrowserSettings>>().Value;
+            driver.Navigate().GoToUrl(config.Browser);
             var actualTitle = driver.Title;
             actualTitle.Should().Be("Swag Labs");
         }
