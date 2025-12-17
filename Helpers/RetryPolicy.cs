@@ -30,4 +30,46 @@ public static class RetryPolicy
 
         );
     }
+
+    public static async Task<T> RetryAsync<T>(
+        Func<CancellationToken, Task<T>> action,
+        Predicate<T> condition,
+        TimeSpan timeout,
+        TimeSpan delay,
+        int retryCount,
+        Func<Exception, bool>? exceptionFilter = null)
+    {
+        using var cts = new CancellationTokenSource(timeout);
+        Exception? lastException = null;
+
+        for (int attempt = 1; attempt <= retryCount; attempt++)
+        {
+            try
+            {
+                var result = await action(cts.Token);
+
+                if (condition(result))
+                    return result;
+            }
+            catch (OperationCanceledException) when (cts.IsCancellationRequested)
+            {
+                throw new TimeoutException($"The operation timed out after {timeout}.");
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+
+                if (exceptionFilter != null && !exceptionFilter(ex))
+                    throw;
+            }
+
+            if (attempt < retryCount)
+                await Task.Delay(delay, cts.Token);
+        }
+
+        throw new InvalidOperationException(
+            $"Retry count {retryCount} exceeded and condition was never met.",
+            lastException);
+    }
+
 }
