@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
@@ -31,29 +32,27 @@ public static class RetryPolicy
         );
     }
 
-    public static async Task<T> RetryAsync<T>(
-        Func<CancellationToken, Task<T>> action,
-        Predicate<T> condition,
+     public static async Task<TResult> RetryAsync<TResult>(
+        Func<object[], Task<TResult>> action,
+        Predicate<TResult> condition,
         TimeSpan timeout,
         TimeSpan delay,
         int retryCount,
-        Func<Exception, bool>? exceptionFilter = null)
+        Func<Exception, bool>? exceptionFilter = null,
+        params object[] args)
     {
-        using var cts = new CancellationTokenSource(timeout);
         Exception? lastException = null;
+        var sw = Stopwatch.StartNew();
+        var attemptDelay = delay;
 
         for (int attempt = 1; attempt <= retryCount; attempt++)
         {
             try
             {
-                var result = await action(cts.Token);
+                var result = await action(args);
 
                 if (condition(result))
                     return result;
-            }
-            catch (OperationCanceledException) when (cts.IsCancellationRequested)
-            {
-                throw new TimeoutException($"The operation timed out after {timeout}.");
             }
             catch (Exception ex)
             {
@@ -61,15 +60,26 @@ public static class RetryPolicy
 
                 if (exceptionFilter != null && !exceptionFilter(ex))
                     throw;
+
+                if (sw.Elapsed >= timeout)
+                    throw new TimeoutException($"Retry timeout of {timeout} exceeded.", ex);
+
+                Log.Logger.Warning("Attempt {Attempt}/{RetryCount} failed. Error: {Message}. Retrying...",
+                    attempt, retryCount, ex.Message);
             }
 
             if (attempt < retryCount)
-                await Task.Delay(delay, cts.Token);
+            {
+                await Task.Delay(attemptDelay);
+
+                attemptDelay = TimeSpan.FromMilliseconds(attemptDelay.TotalMilliseconds * 1.5);
+            }
         }
 
         throw new InvalidOperationException(
-            $"Retry count {retryCount} exceeded and condition was never met.",
-            lastException);
+            $"Retry attempts ({retryCount}) exhausted without meeting condition.",
+            lastException
+        );
     }
 
 }

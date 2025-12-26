@@ -18,10 +18,10 @@ namespace SharpAutomation.Tests
             var config = GlobalSetUp.GetService<IOptions<BrowserSettings>>().Value;
 
             var actualTitle = await RetryPolicy.RetryAsync(
-                action: _ =>
+                action: async args =>
                 {
                     driver.Navigate().GoToUrl(config.Browser);
-                    return Task.FromResult(driver.Title);
+                    return driver.Title;
                 },
                 condition: title => new WebDriverWait(driver, TimeSpan.FromSeconds(30))
                 .Until(d => d.Title == "Swag Labs"),
