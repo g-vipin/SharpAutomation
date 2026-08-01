@@ -57,19 +57,10 @@ namespace SharpAutomation.Helpers
 
                     return driverFactory.CreateWebDriver(browserSettings.Browser);
                 });
+                services.AddScoped<IUiAutomationDriver, SeleniumUiAutomationDriver>();
 
                 services.AddScoped<CorrelationContext>();
-                services.AddScoped<HttpClientDelegatingHandler>();
-
-                services.AddHttpClient("ApiClient", (provider, client) =>
-                {  
-                    var apiSettings = provider.GetRequiredService<IOptions<ApiSettings>>().Value;
-                    client.BaseAddress = new Uri(apiSettings.BaseUrl);
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(apiSettings.ContentType));
-                    client.Timeout = TimeSpan.FromSeconds(apiSettings.TimeoutSeconds);
-                    client.DefaultRequestHeaders.Accept.Clear();
-                })
-                .AddHttpMessageHandler<HttpClientDelegatingHandler>();
+                services.AddSharpApiClients(configuration);
 
                 Log.Information("Service registration completed successfully.");
                 return services.BuildServiceProvider();

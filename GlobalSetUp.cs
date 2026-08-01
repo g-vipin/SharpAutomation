@@ -50,13 +50,11 @@ namespace SharpAutomation
             }
         }
 
-        // Create a new scope for each test
         public static IServiceScope CreateTestScope()
         {
             return ServiceProvider.CreateScope();
         }
 
-        // Utility: resolve services anywhere
         public static T GetService<T>() where T : class
         {
             return ServiceProvider.GetRequiredService<T>();
